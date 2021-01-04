@@ -7,44 +7,49 @@ import android.content.ContentResolver
 import android.net.Uri
 import android.provider.ContactsContract
 import androidx.core.database.getStringOrNull
+import com.jaydlc.jaylink.utils.models.Contact
 import com.jaydlc.jaylink.utils.models.Sms
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 class MessagingManager(
-    val contentResolver: ContentResolver
+        private val contentResolver: ContentResolver
 ) {
-    fun getAllContacts() {
-        val nameList = mutableListOf<String>()
+    private fun getAllContacts(): List<Contact> {
+        val contacts = mutableListOf<Contact>()
 
         val cur =
-            contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null)
+                contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null)
 
-        if ((if (cur != null) cur.getCount() else 0) > 0) {
+        if ((cur?.count ?: 0) > 0) {
             while (cur != null && cur.moveToNext()) {
                 val id = cur.getString(
-                    cur.getColumnIndex(ContactsContract.Contacts._ID)
+                        cur.getColumnIndex(ContactsContract.Contacts._ID)
                 )
+
                 val name = cur.getString(
-                    cur.getColumnIndex(
-                        ContactsContract.Contacts.DISPLAY_NAME
-                    )
+                        cur.getColumnIndex(
+                                ContactsContract.Contacts.DISPLAY_NAME
+                        )
                 )
-                nameList.add(name)
+
                 if (cur.getInt(cur.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)) > 0) {
                     val pCur = contentResolver.query(
-                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        null,
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                        arrayOf(id), null
+                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            null,
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                            arrayOf(id), null
                     )!!
                     while (pCur.moveToNext()) {
                         val phoneNo = pCur.getString(
-                            pCur.getColumnIndex(
-                                ContactsContract.CommonDataKinds.Phone.NUMBER
-                            )
+                                pCur.getColumnIndex(
+                                        ContactsContract.CommonDataKinds.Phone.NUMBER
+                                )
                         )
+
+                        contacts.add(Contact(name, phoneNo))
+
                     }
                     pCur.close()
                 }
@@ -55,15 +60,18 @@ class MessagingManager(
             cur.close()
         }
 
-        // return nameList.toList()
-        return
+        return contacts.toList().sortedBy {
+            it.Name
+        }
     }
 
-    fun getSmsMessages(contentResolver: ContentResolver): List<Sms>? {
+    fun getSmsMessages(): List<Sms>? {
         val messages = mutableListOf<Sms>()
+        val contacts = getAllContacts()
+
         val cursor = contentResolver.query(
-            Uri.parse("content://sms/inbox"),
-            null, null, null, null
+                Uri.parse("content://sms/inbox"),
+                null, null, null, null
         )!!
 
         fun getIndex(columnName: String): Int {
@@ -97,8 +105,8 @@ class MessagingManager(
             val body = getString(indexBody)
             val dateString = getString(indexDate)!!
             val date = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(dateString.toLong()),
-                ZoneId.systemDefault()
+                    Instant.ofEpochMilli(dateString.toLong()),
+                    ZoneId.systemDefault()
             )
             val person = cursor.getBlob(indexPerson)
             val read = getString(indexRead) == "1"
@@ -106,8 +114,11 @@ class MessagingManager(
             val type = getString(indexType)
             val subject = getString(indexSubject)
             val seen = getString(indexSeen) == "1"
+            val contact = contacts.find {
+                it.NormalizedPhoneNumber == Sms.normalizePhoneNumber(address!!)
+            }
 
-            messages.add(Sms(body, read, address, date, person, status, type, subject, seen))
+            messages.add(Sms(body, read, address, date, person, status, type, subject, seen, contact))
         } while (cursor.moveToNext())
 
         cursor.close()

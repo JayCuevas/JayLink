@@ -13,19 +13,21 @@ import com.jaydlc.jaylink.utils.MessagingManager
 
 
 class MainActivity : AppCompatActivity() {
-    private val PERMISSIONS_REQUEST = 1
-    private val messageManager = MessagingManager(contentResolver)
+    private final val PERMISSIONS_REQUEST = 1
+    private lateinit var messageManager: MessagingManager
 
     private val requiredPermissions = arrayOf(
-        Manifest.permission.READ_SMS,
-        Manifest.permission.SEND_SMS,
-        Manifest.permission.READ_CONTACTS,
-        Manifest.permission.WRITE_CONTACTS
+            Manifest.permission.READ_SMS,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.WRITE_CONTACTS
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        messageManager = MessagingManager(contentResolver)
 
         if (checkAndRequestPermissions()) {
             main()
@@ -33,14 +35,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun main() {
+        val messages = messageManager.getSmsMessages()
 
     }
 
     fun checkAndRequestPermissions(): Boolean {
         fun permissionGranted(permission: String): Boolean {
             return ContextCompat.checkSelfPermission(
-                this,
-                permission
+                    this,
+                    permission
             ) == PackageManager.PERMISSION_GRANTED
         }
 
@@ -54,9 +57,9 @@ class MainActivity : AppCompatActivity() {
 
         if (permissionsNeeded.isNotEmpty()) {
             ActivityCompat.requestPermissions(
-                this,
-                requiredPermissions,
-                PERMISSIONS_REQUEST
+                    this,
+                    requiredPermissions,
+                    PERMISSIONS_REQUEST
             )
             return false
         }
@@ -66,9 +69,9 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
     ) {
 
         if (requestCode == PERMISSIONS_REQUEST) {
@@ -77,8 +80,11 @@ class MainActivity : AppCompatActivity() {
 
             // Gather permission grant results
             for (i in grantResults.indices) {
-                permissionResults.put(permissions[i], grantResults[i])
-                deniedCount++
+                // Keep track of only permissions that were denied
+                if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                    permissionResults.put(permissions[i], grantResults[i])
+                    deniedCount++
+                }
             }
 
             // Check if all permissions are granted
