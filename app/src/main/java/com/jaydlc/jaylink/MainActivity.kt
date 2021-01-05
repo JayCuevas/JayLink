@@ -4,12 +4,15 @@ package com.jaydlc.jaylink
 // https://medium.com/mindorks/multiple-runtime-permissions-in-android-without-any-third-party-libraries-53ccf7550d0
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.jaydlc.jaylink.utils.MessagingManager
+import com.jaydlc.jaylink.utils.Server
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -20,7 +23,10 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.READ_SMS,
             Manifest.permission.SEND_SMS,
             Manifest.permission.READ_CONTACTS,
-            Manifest.permission.WRITE_CONTACTS
+            Manifest.permission.WRITE_CONTACTS,
+            Manifest.permission.ACCESS_NETWORK_STATE,
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.INTERNET
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,17 +35,45 @@ class MainActivity : AppCompatActivity() {
 
         messageManager = MessagingManager(contentResolver)
 
+        setUiEvents()
+
         if (checkAndRequestPermissions()) {
             main()
         }
     }
 
-    fun main() {
-        val messages = messageManager.getSmsMessages()
+    private fun setUiEvents() {
+        this.btnStartServer.setOnClickListener {
+            runServer()
+        }
 
+        this.btnStopServer.setOnClickListener {
+            stopServer()
+        }
     }
 
-    fun checkAndRequestPermissions(): Boolean {
+    private fun main() {
+        // val messages = messageManager.getSmsMessages()
+        val server = Server()
+        this.tvIpAddress.text = server.getLocalIpAddress(applicationContext)
+    }
+
+    private fun runServer() {
+        Intent(this, Server::class.java).also {
+            startService(it)
+            it.putExtra("EXTRA_PORT", applicationContext.resources.getInteger(R.integer.socket_port))
+            tvServerStatus.text = "Server Running"
+        }
+    }
+
+    private fun stopServer() {
+        Intent(this, Server::class.java).also {
+            stopService(it)
+            tvServerStatus.text = "Server Stopped"
+        }
+    }
+
+    private fun checkAndRequestPermissions(): Boolean {
         fun permissionGranted(permission: String): Boolean {
             return ContextCompat.checkSelfPermission(
                     this,
