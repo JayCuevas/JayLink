@@ -13,15 +13,35 @@ import java.lang.Exception
 import java.net.BindException
 import java.net.InetAddress
 import java.net.ServerSocket
-import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import com.corundumstudio.socketio.*
 
 class Server : Service() {
     private val TAG = "SocketServer"
-    private val backupPort = 8081
-    private lateinit var server: ServerSocket
-    private var client: Socket? = null
+
+    //    private val BACKUP_PORT = 8081
+    private val server: SocketIOServer
+    private val namespace: SocketIONamespace
+
+    init {
+
+        val config = Configuration()
+        config.port = 8080
+        config.hostname = "localhost"
+        server = SocketIOServer(config)
+
+        namespace = server.addNamespace("/")
+    }
+
+    private fun setListeners() {
+        server.addConnectListener {
+            val addr = it.handshakeData.address
+        }
+        namespace.addConnectListener {
+//            i
+        }
+    }
 
     fun getLocalIpAddress(context: Context): String? {
         val wifiManager = context.getSystemService(WIFI_SERVICE) as WifiManager
@@ -34,19 +54,14 @@ class Server : Service() {
     }
 
     private fun listen(port: Int) {
-        server = ServerSocket(port)
-        server.reuseAddress = true
-        Log.d(TAG, "Server started on 127.0.0.1:" + server.localPort.toString())
-        client = server.accept()
-        Log.d(TAG, "Received client!")
+//        server = ServerSocket(port)
+//        server.reuseAddress = true
+//        Log.d(TAG, "Server started on 127.0.0.1:" + server.localPort.toString())
+//        client = server.accept()
+//        Log.d(TAG, "Received client!")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-    private fun killClient() {
-        client?.close()
-        client = null
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val defaultPort = 8080
@@ -56,7 +71,7 @@ class Server : Service() {
             try {
                 listen(port)
             } catch (e: BindException) {
-                listen(backupPort)
+//                listen(BACKUP_PORT)
             }
         }.start()
 
@@ -73,7 +88,7 @@ class Server : Service() {
 
         // Closing the server will throw an exception if it is blocked waiting for a client
         try {
-            server.close()
+//            server.close()
         } catch (e: Exception) {
             Log.e(TAG, "Error closing server socket", e)
         }
