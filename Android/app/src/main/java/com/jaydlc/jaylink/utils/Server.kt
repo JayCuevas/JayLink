@@ -18,8 +18,10 @@ import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
+// TODO: Replace this class with a Service that uses the lib.Server class
 class Server : Service() {
     private val TAG = "SocketServer"
+//    val t = Server().test()
     private val backupPort = 8081
     private lateinit var server: ServerSocket
     private lateinit var client: Socket
@@ -30,11 +32,11 @@ class Server : Service() {
             return ipAddress
         }
 
-        val wifiManager = context.getSystemService(WIFI_SERVICE) as WifiManager
+        val wifiManager = context.applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
         val ipInt = wifiInfo.ipAddress
         ipAddress = InetAddress.getByAddress(
-                ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()
+            ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(ipInt).array()
         ).hostAddress
 
         return ipAddress
