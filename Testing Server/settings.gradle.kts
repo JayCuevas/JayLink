@@ -1,3 +1,4 @@
+rootProject.name = "Testing Server"
 
-rootProject.name = "Testing_Server"
-
+include(":lib")
+project(":lib").projectDir = File("../Android/lib")

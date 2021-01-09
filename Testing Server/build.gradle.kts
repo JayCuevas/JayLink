@@ -16,7 +16,8 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test-junit"))
-    implementation(fileTree("../Android/lib/build/libs/") { include("*.jar") })
+    //    implementation(fileTree("../Android/lib/build/libs/") { include("*.jar") })
+    implementation(project(":lib"))
     implementation("com.beust:klaxon:5.0.1")
     implementation("io.reactivex.rxjava3:rxjava:3.0.9")
 }
